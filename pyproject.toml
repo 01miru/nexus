@@ -1,0 +1,32 @@
+[tool.mypy]
+exclude = [
+    "migrations",
+    "tests",
+    "__pycache__",
+    "config",
+    "manage.py",
+]
+python_version = "3.12"
+ignore_missing_imports = true  # Ignoruje brak typów w bibliotekach zewnętrznych, np. Django
+follow_imports = "silent"
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true  # Wymaga typów w definicjach funkcji
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"  # Zamień na nazwę modułu ustawień Django
+
+[[tool.mypy.overrides]]
+module = [
+    "apps.*"  # Dostosuj do nazw swoich aplikacji Django
+]
+disallow_untyped_defs = true
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"config/*" = ["F401", "F403"]
+
+[tool.ruff]
+extend-select = ["I"]

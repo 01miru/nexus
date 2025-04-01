@@ -1,0 +1,347 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nexus Process Manager - Snapshots Viewer</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="{% static 'process_manager/tailwind_config.js' %}"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #16213e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3d5af1;
+            border-radius: 4px;
+        }
+        /* Sorting indicator styles */
+        .sort-icon {
+            opacity: 0.3;
+            margin-left: 5px;
+        }
+        .sort-icon.active {
+            opacity: 1;
+        }
+        /* Menu dropdown styles */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            z-index: 100;
+            top: 100%;
+            right: 0;
+        }
+        .dropdown.open .dropdown-menu {
+            display: block;
+        }
+
+        @media (min-width: 768px) {
+            .dropdown:hover .dropdown-menu {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-50 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div class="bg-dark-100 rounded-2xl shadow-2xl border border-dark-200 mb-6">
+            <!-- Header section -->
+            <div class="px-3 sm:px-6 py-4 border-b border-dark-200">
+                <!-- Title area -->
+                <div class="flex items-center space-x-2 mb-4">
+                    <i class="fas fa-camera text-dark-300 text-xl sm:text-2xl"></i>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-100">Snapshots Viewer</h1>
+                </div>
+
+                <!-- Controls area -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="text-xs sm:text-sm text-gray-400 mr-auto">
+                       &nbsp;
+                    </div>
+
+                    <div class="dropdown relative">
+                        <button
+                            id="menu-button"
+                            class="bg-dark-200 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-80 transition-all flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
+                        >
+                            <i class="fas fa-bars"></i>
+                            <span class="hidden sm:inline">Menu</span>
+                        </button>
+                        <div class="dropdown-menu bg-dark-100 border border-dark-200 rounded-lg shadow-lg w-40 sm:w-48">
+                            <a href="{% url 'process_manager:kill-processes-list' %}" class="block px-4 py-2 hover:bg-dark-200 transition-all text-sm">
+                                <i class="fas fa-skull mr-2"></i>
+                                Show Killed Processes
+                            </a>
+                            <a href="{% url 'process_manager:processes' %}" class="block px-4 py-2 hover:bg-dark-200 transition-all text-sm">
+                                <i class="fas fa-project-diagram mr-2"></i>
+                                Active processes
+                            </a>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all flex items-center space-x-2">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main content - snapshots list -->
+            <div class="p-3 sm:p-6">
+                <div class="overflow-x-auto">
+                    <table
+                        id="snapshots-table"
+                        class="w-full text-xs sm:text-sm text-left"
+                    >
+                        <thead class="bg-dark-200 text-gray-300 uppercase">
+                            <tr>
+                                <th data-column="0" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    Timestamp
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                                <th data-column="1" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    Author
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                                <th data-column="2" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    CPU Usage
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                                <th data-column="3" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    Memory Usage
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                                <th data-column="4" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    Running Processes
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                                <th class="px-2 py-2 sm:px-4 sm:py-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="snapshots-list" class="divide-y divide-dark-200">
+                            {% for item in snapshots %}
+                            <tr class="hover:bg-dark-200/50 cursor-pointer" onclick="selectSnapshot('snapshot-{{ item.pk }}')">
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.created_at|date:"d.m.Y H:m:s" }}</td>
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.created_by }}</td>
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.get_total_cpu }} %</td>
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.get_total_memory }} MB</td>
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.get_processes_count }}</td>
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">
+                                    <div class="flex space-x-1 sm:space-x-2">
+                                        <button class="text-blue-400 hover:text-blue-300 transition-colors"
+                                            hx-get="{% url 'process_manager:snapshot-detail' item.pk %}"
+                                            hx-target="#modal-wrapper"
+                                            hx-swap="innerHTML">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualizations Panel -->
+        <div class="bg-dark-100 rounded-2xl shadow-2xl border border-dark-200">
+            <div class="px-3 sm:px-6 py-4 border-b border-dark-200">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-chart-line text-dark-300 text-xl sm:text-2xl"></i>
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-100">System Performance Trends</h2>
+                </div>
+            </div>
+            <div class="p-3 sm:p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <!-- CPU Usage Chart -->
+                    <div class="bg-dark-50 p-3 sm:p-4 rounded-lg border border-dark-200">
+                        <h3 class="text-sm sm:text-base font-medium mb-2">CPU Usage Over Time</h3>
+                        <div class="h-48 sm:h-64">
+                            <canvas id="cpuChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Memory Usage Chart -->
+                    <div class="bg-dark-50 p-3 sm:p-4 rounded-lg border border-dark-200">
+                        <h3 class="text-sm sm:text-base font-medium mb-2">Memory Usage Over Time</h3>
+                        <div class="h-48 sm:h-64">
+                            <canvas id="memoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Process Count Chart -->
+                    <div class="bg-dark-50 p-3 sm:p-4 rounded-lg border border-dark-200">
+                        <h3 class="text-sm sm:text-base font-medium mb-2">Running Processes Over Time</h3>
+                        <div class="h-48 sm:h-64">
+                            <canvas id="processesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details modal -->
+        <div id="modal-wrapper"></div>
+
+        <div
+            id="loading-indicator"
+            class="htmx-indicator fixed top-4 right-4 z-50"
+        >
+            <div class="w-8 h-8 sm:w-12 sm:h-12 border-4 border-dark-300 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('menu-button').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelector('.dropdown').classList.toggle('open');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.querySelector('.dropdown');
+            const menuButton = document.getElementById('menu-button');
+
+            if (!dropdown.contains(e.target) || e.target === menuButton) {
+                return;
+            }
+
+            if (dropdown.classList.contains('open')) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        // Modal functions
+        function closeModal() {
+            document.getElementById('details-modal').classList.add('hidden');
+        }
+
+        function selectSnapshot(snapshotId) {
+            // Highlight selected row
+            document.querySelectorAll('#snapshots-list tr').forEach(row => {
+                row.classList.remove('bg-dark-200/70');
+            });
+            event.currentTarget.classList.add('bg-dark-200/70');
+        }
+
+        // Create Charts
+        function createCharts() {
+            const labels = {{ labels|safe }};
+            const cpuData = {{ cpu_data|safe }};
+            const memoryData = {{ memory_data|safe }};
+            const processes_data = {{ processes_data|safe }};
+
+            // Common chart options
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                }
+            };
+
+            // Sample data
+            const times = ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00'];
+
+            // CPU Chart
+            const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+            const cpuChart = new Chart(cpuCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'CPU Usage (%)',
+                        data: cpuData,
+                        borderColor: '#3d5af1',
+                        backgroundColor: 'rgba(61, 90, 241, 0.2)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: commonOptions
+            });
+
+            // Memory Chart
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            const memoryChart = new Chart(memoryCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Memory Usage (GB)',
+                        data: memoryData,
+                        borderColor: '#4ade80',
+                        backgroundColor: 'rgba(74, 222, 128, 0.2)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: commonOptions
+            });
+
+            // Processes Chart
+            const processesCtx = document.getElementById('processesChart').getContext('2d');
+            const processesChart = new Chart(processesCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Running Processes',
+                        data: processes_data,
+                        borderColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: commonOptions
+            });
+
+            return { cpuChart, memoryChart, processesChart };
+        }
+
+        // Initialize charts when the page loads
+        window.onload = function() {
+            window.charts = createCharts();
+        };
+    </script>
+</body>
+</html>

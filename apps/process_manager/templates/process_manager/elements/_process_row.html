@@ -1,0 +1,22 @@
+{% for process in processes %}
+<tr class="bg-dark-50 hover:bg-dark-200/30">
+    <td class="px-4 py-3">{{ process.pid }}</td>
+    <td class="px-4 py-3">{{ process.status }}</td>
+    <td class="px-4 py-3">{{ process.create_time|date:"d.m.Y H:m:s" }}</td>
+    <td class="px-4 py-3">{{ process.duration }}</td>
+    <td class="px-4 py-3">{{ process.name }}</td>
+    <td class="px-4 py-3">{{ process.memory_usage }} MB</td>
+    <td class="px-4 py-3">{{ process.cpu_usage }}%</td>
+    <td class="px-4 py-3">
+        <button
+            hx-get="{% url 'process_manager:kill-process' process.pid %}"
+            hx-confirm="Are you sure to kill this process?"
+            hx-trigger="click"
+            hx-swap="none"
+            hx-on::after-request="if (event.detail.successful) location.reload();"
+            class="bg-red-600 text-white px-2 py-1 rounded">
+            Kill
+        </button>
+    </td>
+</tr>
+{% endfor %}

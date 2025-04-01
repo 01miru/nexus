@@ -1,0 +1,170 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nexus Process Manager - Killed processes</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="{% static 'process_manager/tailwind_config.js' %}"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #16213e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3d5af1;
+            border-radius: 4px;
+        }
+        /* Sorting indicator styles */
+        .sort-icon {
+            opacity: 0.3;
+            margin-left: 5px;
+        }
+        .sort-icon.active {
+            opacity: 1;
+        }
+        /* Menu dropdown styles */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            z-index: 100;
+            top: 100%;
+            right: 0;
+        }
+        .dropdown.open .dropdown-menu {
+            display: block;
+        }
+
+        @media (min-width: 768px) {
+            .dropdown:hover .dropdown-menu {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-50 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div class="bg-dark-100 rounded-2xl shadow-2xl border border-dark-200">
+            <!-- Header section -->
+            <div class="px-3 sm:px-6 py-4 border-b border-dark-200">
+                <!-- Title area -->
+                <div class="flex items-center space-x-2 mb-4">
+                    <i class="fas fa-list-ul text-dark-300 text-xl sm:text-2xl"></i>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-100">Killed processes</h1>
+                </div>
+
+                <!-- Controls area - restructured for mobile -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="text-xs sm:text-sm text-gray-400 mr-auto">
+                        &nbsp;
+                    </div>
+
+                    <div class="dropdown relative">
+                        <button
+                            id="menu-button"
+                            class="bg-dark-200 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-80 transition-all flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
+                        >
+                            <i class="fas fa-bars"></i>
+                            <span class="hidden sm:inline">Menu</span>
+                        </button>
+                        <div class="dropdown-menu bg-dark-100 border border-dark-200 rounded-lg shadow-lg w-40 sm:w-48">
+                            <a href="{% url 'process_manager:processes' %}" class="block px-4 py-2 hover:bg-dark-200 transition-all text-sm">
+                                <i class="fas fa-project-diagram mr-2"></i>
+                                Active processes
+                            </a>
+                        </div>
+                    </div>
+
+
+                    <button
+                        class="bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-80 transition-all flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
+                    >
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main content section -->
+            <div class="p-3 sm:p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                    <input
+                        type="text"
+                        id="timestamp-filter"
+                        placeholder="Filter by date"
+                        class="bg-dark-50 border border-dark-200 text-gray-100 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 focus:ring-2 focus:ring-dark-300 text-sm"
+                    >
+                    <input
+                        type="text"
+                        id="author-filter"
+                        placeholder="Filter by author"
+                        class="bg-dark-50 border border-dark-200 text-gray-100 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 focus:ring-2 focus:ring-dark-300 text-sm"
+                    >
+                    <input
+                        type="text"
+                        id="process-filter"
+                        placeholder="Filter by Mame"
+                        class="bg-dark-50 border border-dark-200 text-gray-100 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 focus:ring-2 focus:ring-dark-300 text-sm"
+                    >
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table
+                        id="elements-table"
+                        class="w-full text-xs sm:text-sm text-left"
+                    >
+                        <thead class="bg-dark-200 text-gray-300 uppercase">
+                            <tr>
+                                <th data-column="0" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    Timestamp
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                                <th data-column="1" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    Author
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                                <th data-column="2" class="px-2 py-2 sm:px-4 sm:py-3 sortable cursor-pointer hover:bg-dark-300/20 relative">
+                                    Process name
+                                    <i class="fas fa-sort sort-icon absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2"></i>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="elements-list" class="divide-y divide-dark-200">
+                            {% for item in processes %}
+                            <tr class="hover:bg-dark-200/50">
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.kill_time }}</td>
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.killed_by }}</td>
+                                <td class="px-2 py-1.5 sm:px-4 sm:py-2">{{ item.process_name }}</td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <div
+                    id="loading-indicator"
+                    class="htmx-indicator fixed top-4 right-4 z-50"
+                >
+                    <div class="w-8 h-8 sm:w-12 sm:h-12 border-4 border-dark-300 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'process_manager/killed_processes_list.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nexus Process Manager - - Login</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        // Custom Tailwind configuration
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark': {
+                            50: '#1a1a2e',
+                            100: '#16213e',
+                            200: '#0f3460',
+                            300: '#3d5af1'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Animated gradient background */
+        .animated-gradient {
+            background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460, #3d5af1);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center animated-gradient">
+    <div class="w-full max-w-md">
+        <div class="bg-dark-100 rounded-2xl shadow-2xl border border-dark-200 overflow-hidden">
+            <div class="px-6 py-8 sm:px-10">
+                <div class="text-center mb-8">
+                    <div class="flex justify-center mb-4">
+                        <i class="fas fa-project-diagram text-dark-300 text-5xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-100">Nexus</h2>
+                    <p class="text-gray-400 mt-2">Process Management System</p>
+                </div>
+
+                <!-- Error Message Container -->
+                <div
+                    id="error-container"
+                    class="mb-6 hidden"
+                >
+                    <div
+                        id="error-message"
+                        class="bg-red-600/20 border border-red-600/50 text-red-300 px-4 py-3 rounded-lg flex items-center space-x-3"
+                    >
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="error-text" class="flex-grow"></span>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form
+                    hx-post="/"
+                    hx-target="this"
+                    hx-swap="none"
+                    class="space-y-6"
+                >
+                    <div>
+                        {% csrf_token %}
+                        <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
+                            Username
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user text-dark-300"></i>
+                            </div>
+                            <input
+                                type="text"
+                                name="username"
+                                id="username"
+                                required
+                                class="block w-full pl-10 pr-3 py-2 bg-dark-50 border border-dark-200 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-dark-300"
+                                placeholder="Enter your username"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
+                            Password
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-dark-300"></i>
+                            </div>
+                            <input
+                                type="password"
+                                name="password"
+                                id="password"
+                                required
+                                class="block w-full pl-10 pr-3 py-2 bg-dark-50 border border-dark-200 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-dark-300"
+                                placeholder="Enter your password"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input
+                                id="remember-me"
+                                name="remember-me"
+                                type="checkbox"
+                                class="h-4 w-4 bg-dark-50 border-dark-200 rounded text-dark-300 focus:ring-dark-300"
+                            >
+                            <label for="remember-me" class="ml-2 block text-sm text-gray-400">
+                                Remember me
+                            </label>
+                        </div>
+
+                    </div>
+
+                    <div>
+                        <button
+                            type="submit"
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-dark-300 hover:bg-dark-300/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-dark-300 transition-all"
+                        >
+                            Sign in
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="px-6 py-4 bg-dark-200/30 border-t border-dark-200 text-center">
+                <p class="text-sm text-gray-400">
+                    New to Nexus?
+                    <a href="#" class="font-medium text-dark-300 hover:text-dark-300/80">
+                        See project readme
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center text-gray-400 text-xs">
+            &copy; 2025 Dorian Nowak - All rights reserved
+        </div>
+    </div>
+
+    <script>
+        document.body.addEventListener('htmx:afterOnLoad', function(event) {
+            const errorContainer = document.getElementById('error-container');
+            const errorText = document.getElementById('error-text');
+
+            const errorMessages = {
+                '403': 'Access denied. Check your credentials.',
+                '500': 'Server error. Please try again later.',
+                'default': 'An unknown error occurred. Please try again.'
+            };
+
+            if (event.detail.successful) {
+                window.location.href = '{% url 'process_manager:processes' %}';
+            } else {
+                errorContainer.classList.remove('hidden');
+                const status = event.detail.xhr.status.toString();
+                errorText.textContent = errorMessages[status] || errorMessages['default'];
+            }
+        });
+    </script>
+</body>
+</html>

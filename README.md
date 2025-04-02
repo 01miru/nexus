@@ -17,7 +17,7 @@ This monitoring solution gives system administrators and DevOps professionals th
 - [ ] Change tailwind from CDN to local
 - [ ] Add more tests
 - [ ] Consider using "real" database instead of SQLite
-
+- [ ] Exclude PID's from the process list via method instead of hardcoded list (see 'EXCLUDE_PIDS' in base.py)
 
 ## Configuration
 
@@ -46,7 +46,6 @@ SECRET_KEY=your_long_and_secure_key_here
 - Restrict access permissions to both the environment variable and `.env` file
 
 The application will automatically detect and use the SECRET_KEY whether it's set as an environment variable or in the `.env` file.
-
 
 ## Nexus Startup Guide
 

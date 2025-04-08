@@ -18,6 +18,9 @@ This monitoring solution gives system administrators and DevOps professionals th
 - [ ] Add more tests
 - [ ] Consider using "real" database instead of SQLite
 - [ ] Exclude PID's from the process list via method instead of hardcoded list (see 'EXCLUDE_PIDS' in base.py)
+- [ ] Add logging to the application (Django logger or Sentry)
+- [ ] Add permissions to the application (e.g., only allow certain users to kill processes)
+- [ ] Add production configuration
 
 ## Configuration
 
